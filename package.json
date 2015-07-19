@@ -1,0 +1,16 @@
+{
+  "name": "tsflux",
+  "version": "0.1.0",
+  "description": "Minimal Flux implementation inspired by Redux that works with TypeScript and ImmutableJS",
+  "main": "index.tsx",
+  "keywords": [
+    "react",
+    "typescript",
+    "flux"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Stanislav Panferov <fnight.m@gmail.com>",
+  "license": "MIT"
+}
