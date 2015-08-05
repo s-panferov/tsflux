@@ -1,22 +1,20 @@
-/// <reference path="./typings/tsd.d.ts" />
-
 /*
  * DEPS
  */
 
-interface EventEmitter {
+export interface EventEmitter {
     emit(name: string, ...args: any[]);
     addListener(name: string, callback: () => void);
     removeListener(name: string, callback: () => void);
 }
 
-interface FluxDispatcher<T> {
+export interface FluxDispatcher<T> {
     register(foo: (action: T) => void);
     dispatch(action: T): void;
 }
 
 export interface Action<T> {
-    actionType?: T
+    actionType: T
 }
 
 export type Dispatcher<T> = FluxDispatcher<Action<T>>;
@@ -112,33 +110,33 @@ export function runFlux<ActionType, State>(stores: Store<ActionType, any, State>
     return flux;
 }
 
-export interface IProviderProps<ActionType, State> extends __React.DOMAttributes {
+export interface ProviderProps<ActionType, State> extends __React.DOMAttributes {
     flux: Flux<ActionType, State>
 }
 
-export interface IConnectorProps<ComponentState, State> extends __React.DOMAttributes {
+export interface ConnectorProps<ComponentState, State> extends __React.DOMAttributes {
     selector: (componentState: ComponentState, newAppState: State) => ComponentState;
     renderer: (props: any) => __React.ReactElement<any>;
 }
 
-export interface IConnectorState<ComponentState> {
+export interface ConnectorState<ComponentState> {
     data: ComponentState
 }
 
-export interface IConnectorContext<ActionType, State> {
+export interface ConnectorContext<ActionType, State> {
     flux: Flux<ActionType, State>
 }
 
-function getDisplayName(Component) {
+export function getDisplayName(Component) {
     return Component.displayName || Component.name || 'Component';
 }
 
-export interface IFluxProps<T> {
+export interface FluxProps<T> {
     dispatch?: Dispatch<T>
 }
 
 export function createAll<ActionType, State>(React: typeof __React, fromJS: (o: any) => any) {
-    class Provider extends React.Component<IProviderProps<ActionType, State>, any> {
+    class Provider extends React.Component<ProviderProps<ActionType, State>, any> {
         static childContextTypes = {
             flux: React.PropTypes.object.isRequired
         };
@@ -153,15 +151,15 @@ export function createAll<ActionType, State>(React: typeof __React, fromJS: (o: 
         }
     }
 
-    class Connector<ComponentState> extends React.Component<IConnectorProps<ActionType, State>, IConnectorState<ComponentState>> {
+    class Connector<ComponentState> extends React.Component<ConnectorProps<ActionType, State>, ConnectorState<ComponentState>> {
 
         static contextTypes = {
             flux: React.PropTypes.object.isRequired
         };
 
-        context: IConnectorContext<ActionType, State>
+        context: ConnectorContext<ActionType, State>
 
-        constructor(props: IConnectorProps<ActionType, State>, context: IConnectorContext<ActionType, State>) {
+        constructor(props: ConnectorProps<ActionType, State>, context: ConnectorContext<ActionType, State>) {
             super(props, context);
             this.state = { data: fromJS({}) };
             this.handleChange = this.handleChange.bind(this);
