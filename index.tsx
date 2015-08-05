@@ -1,8 +1,10 @@
+/// <reference path="./typings/tsd.d.ts" />
+
 /*
  * DEPS
  */
 
-interface IEventEmitter {
+interface EventEmitter {
     emit(name: string, ...args: any[]);
     addListener(name: string, callback: () => void);
     removeListener(name: string, callback: () => void);
@@ -13,38 +15,38 @@ interface FluxDispatcher<T> {
     dispatch(action: T): void;
 }
 
-export interface IAction<T> {
+export interface Action<T> {
     actionType?: T
 }
 
-export type IDispatcher<T> = FluxDispatcher<IAction<T>>;
-export interface IDispatch<T> {
-    (action: IAction<T>): void
+export type Dispatcher<T> = FluxDispatcher<Action<T>>;
+export interface Dispatch<T> {
+    (action: Action<T>): void
 }
 
-export interface IFlux<ActionType, State> {
-    events: IEventEmitter,
-    dispatch: IDispatch<ActionType>,
+export interface Flux<ActionType, State> {
+    events: EventEmitter,
+    dispatch: Dispatch<ActionType>,
     getState(): State
 }
 
-export interface IStateSlices<State> {
+export interface StateSlices<State> {
     currentState: State,
     prevState: State
 }
 
-export interface IStore<ActionType, StoreState, State> {
+export interface Store<ActionType, StoreState, State> {
     name: string
-    (state: StoreState, action: IAction<ActionType>,
-        flux: IFlux<ActionType, State>, states?: IStateSlices<State>): StoreState
+    (state: StoreState, action: Action<ActionType>,
+        flux: Flux<ActionType, State>, states?: StateSlices<State>): StoreState
 }
 
-export function runFlux<ActionType, State>(stores: IStore<ActionType, any, State>[],
+export function runFlux<ActionType, State>(stores: Store<ActionType, any, State>[],
                            initialState: any,
-                           ds: IDispatcher<ActionType>,
-                           events: IEventEmitter,
+                           ds: Dispatcher<ActionType>,
+                           events: EventEmitter,
                            fromJS: (obj: any) => any)
-    : IFlux<ActionType, State> {
+    : Flux<ActionType, State> {
 
     let dispatch = (action) => {
         console.log('Dispatch', action);
@@ -52,14 +54,14 @@ export function runFlux<ActionType, State>(stores: IStore<ActionType, any, State
     };
 
     let state: State;
-    let states: IStateSlices<State> = {
+    let states: StateSlices<State> = {
         currentState: null,
         prevState: null
     };
 
     function getState() { return state };
 
-    let flux: IFlux<ActionType, State> = { events, dispatch, getState };
+    let flux: Flux<ActionType, State> = { events, dispatch, getState };
 
     // Note: pseudo-store
     ds.register((action) => {
@@ -111,7 +113,7 @@ export function runFlux<ActionType, State>(stores: IStore<ActionType, any, State
 }
 
 export interface IProviderProps<ActionType, State> extends __React.DOMAttributes {
-    flux: IFlux<ActionType, State>
+    flux: Flux<ActionType, State>
 }
 
 export interface IConnectorProps<ComponentState, State> extends __React.DOMAttributes {
@@ -124,7 +126,7 @@ export interface IConnectorState<ComponentState> {
 }
 
 export interface IConnectorContext<ActionType, State> {
-    flux: IFlux<ActionType, State>
+    flux: Flux<ActionType, State>
 }
 
 function getDisplayName(Component) {
@@ -132,7 +134,7 @@ function getDisplayName(Component) {
 }
 
 export interface IFluxProps<T> {
-    dispatch?: IDispatch<T>
+    dispatch?: Dispatch<T>
 }
 
 export function createAll<ActionType, State>(React: typeof __React, fromJS: (o: any) => any) {
@@ -196,17 +198,19 @@ export function createAll<ActionType, State>(React: typeof __React, fromJS: (o: 
     }
 
     function connect(selector) {
-        return DecoratedComponent => class ConnectorDecorator extends React.Component<any, any> {
-            static displayName = `Connector(${getDisplayName(DecoratedComponent)})`;
-            static DecoratedComponent = DecoratedComponent;
+        return (DecoratedComponent) => {
+            return class ConnectorDecorator extends React.Component<any, any> {
+                static displayName = `Connector(${getDisplayName(DecoratedComponent)})`;
+                static DecoratedComponent = DecoratedComponent;
 
-            render() {
-                let inner = (props) => <DecoratedComponent {...props} {...this.props} />;
-                return (
-                    <Connector selector={selector} renderer={ inner } />
-                );
-            }
-        } as any;
+                render() {
+                    let inner = (props) => <DecoratedComponent {...props} {...this.props} />;
+                    return (
+                        <Connector selector={selector} renderer={ inner } />
+                    );
+                }
+            } as any;
+        }
     };
 
     return { Provider, Connector, connect }
