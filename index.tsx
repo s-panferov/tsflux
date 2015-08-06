@@ -22,9 +22,10 @@ export interface Dispatch<T> {
     (action: Action<T>): void
 }
 
-export interface Flux<ActionType, State> {
+export interface Flux<ActionType, State, ActionCreactors> {
     events: EventEmitter,
     dispatch: Dispatch<ActionType>,
+    actions: ActionCreactors,
     getState(): State
 }
 
@@ -33,18 +34,19 @@ export interface StateSlices<State> {
     prevState: State
 }
 
-export interface Store<ActionType, StoreState, State> {
+export interface Store<ActionType, ActionCreators, StoreState, State> {
     name: string
     (state: StoreState, action: Action<ActionType>,
-        flux: Flux<ActionType, State>, states?: StateSlices<State>): StoreState
+        flux: Flux<ActionType, State, ActionCreators>, states?: StateSlices<State>): StoreState
 }
 
-export function runFlux<ActionType, State>(stores: Store<ActionType, any, State>[],
-                           initialState: any,
-                           ds: Dispatcher<ActionType>,
-                           events: EventEmitter,
-                           fromJS: (obj: any) => any)
-    : Flux<ActionType, State> {
+export function runFlux<ActionType, ActionCreators, State, Action>(stores: Store<ActionType, ActionCreators, any, State>[],
+                                           initialState: State,
+                                           ds: Dispatcher<ActionType>,
+                                           events: EventEmitter,
+                                           actionCreators: any
+                                )
+    : Flux<ActionType, State, ActionCreators> {
 
     let dispatch = (action) => {
         console.log('Dispatch', action);
@@ -59,7 +61,29 @@ export function runFlux<ActionType, State>(stores: Store<ActionType, any, State>
 
     function getState() { return state };
 
-    let flux: Flux<ActionType, State> = { events, dispatch, getState };
+    let bindedCreators = {};
+    for (var i in actionCreators) {
+        if (actionCreators.hasOwnProperty(i)) {
+            var item = actionCreators[i];
+            (function(i, item) {
+                if (typeof item == 'function') {
+                    bindedCreators[i] = (...args: any[]) => {
+                        console.log('call', i, item)
+                        dispatch(item(...args))
+                    }
+                } else {
+                    bindedCreators[i] = item;
+                }
+            })(i, item)
+        }
+    }
+
+    let flux: Flux<ActionType, State, ActionCreators> = {
+        events,
+        dispatch,
+        getState,
+        actions: bindedCreators as any
+    };
 
     // Note: pseudo-store
     ds.register((action) => {
@@ -105,13 +129,13 @@ export function runFlux<ActionType, State>(stores: Store<ActionType, any, State>
         }
     });
 
-    state = fromJS(initialState);
+    state = initialState;
 
     return flux;
 }
 
-export interface ProviderProps<ActionType, State> extends __React.DOMAttributes {
-    flux: Flux<ActionType, State>
+export interface ProviderProps<ActionType, ActionCreators, State> extends __React.DOMAttributes {
+    flux: Flux<ActionType, State, ActionCreators>
 }
 
 export interface ConnectorProps<ComponentState, State> extends __React.DOMAttributes {
@@ -123,8 +147,8 @@ export interface ConnectorState<ComponentState> {
     data: ComponentState
 }
 
-export interface ConnectorContext<ActionType, State> {
-    flux: Flux<ActionType, State>
+export interface ConnectorContext<ActionType, ActionCreators, State> {
+    flux: Flux<ActionType, State, ActionCreators>
 }
 
 export function getDisplayName(Component) {
@@ -135,8 +159,8 @@ export interface FluxProps<T> {
     dispatch?: Dispatch<T>
 }
 
-export function createAll<ActionType, State>(React: typeof __React, fromJS: (o: any) => any) {
-    class Provider extends React.Component<ProviderProps<ActionType, State>, any> {
+export function createAll<ActionType, ActionCreators, State>(React: typeof __React, fromJS: (o: any) => any) {
+    class Provider extends React.Component<ProviderProps<ActionType, ActionCreators, State>, any> {
         static childContextTypes = {
             flux: React.PropTypes.object.isRequired
         };
@@ -157,9 +181,9 @@ export function createAll<ActionType, State>(React: typeof __React, fromJS: (o: 
             flux: React.PropTypes.object.isRequired
         };
 
-        context: ConnectorContext<ActionType, State>
+        context: ConnectorContext<ActionType, ActionCreators, State>
 
-        constructor(props: ConnectorProps<ActionType, State>, context: ConnectorContext<ActionType, State>) {
+        constructor(props: ConnectorProps<ActionType, State>, context: ConnectorContext<ActionType, ActionCreators, State>) {
             super(props, context);
             this.state = { data: fromJS({}) };
             this.handleChange = this.handleChange.bind(this);
@@ -189,9 +213,9 @@ export function createAll<ActionType, State>(React: typeof __React, fromJS: (o: 
         render() {
             const { renderer } = this.props;
             const { data } = this.state;
-            const { flux: { dispatch } } = this.context;
+            const { flux: { dispatch, actions } } = this.context;
 
-            return renderer({ dispatch, data });
+            return renderer({ dispatch, data, actions });
         }
     }
 
