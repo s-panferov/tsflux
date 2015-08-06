@@ -1,6 +1,6 @@
 {
   "name": "tsflux",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Minimal Flux implementation inspired by Redux that works with TypeScript and ImmutableJS",
   "main": "index.tsx",
   "keywords": [
