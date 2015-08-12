@@ -1,3 +1,13 @@
+<a name="0.4.1"></a>
+## 0.4.1 (2015-08-12)
+
+
+### Features
+
+* ***:** `connect` now can take Record as a first argument 4d3d576
+
+
+
 <a name="0.3.0"></a>
 # 0.3.0 (2015-08-06)
 
