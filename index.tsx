@@ -131,6 +131,8 @@ export function runFlux<ActionType, ActionCreators, State, Action>(stores: Store
 
     state = initialState;
 
+    ds.dispatch({ actionType: 'INIT' as any });
+
     return flux;
 }
 
@@ -139,8 +141,9 @@ export interface ProviderProps<ActionType, ActionCreators, State> extends __Reac
 }
 
 export interface ConnectorProps<ComponentState, State> extends __React.DOMAttributes {
-    selector: (componentState: ComponentState, newAppState: State) => ComponentState;
+    selector: (componentState: ComponentState, newAppState: State) => any;
     renderer: (props: any) => __React.ReactElement<any>;
+    record: any
 }
 
 export interface ConnectorState<ComponentState> {
@@ -175,7 +178,7 @@ export function createAll<ActionType, ActionCreators, State>(React: typeof __Rea
         }
     }
 
-    class Connector<ComponentState> extends React.Component<ConnectorProps<ActionType, State>, ConnectorState<ComponentState>> {
+    class Connector<ComponentState> extends React.Component<ConnectorProps<any, State>, ConnectorState<ComponentState>> {
 
         static contextTypes = {
             flux: React.PropTypes.object.isRequired
@@ -185,7 +188,11 @@ export function createAll<ActionType, ActionCreators, State>(React: typeof __Rea
 
         constructor(props: ConnectorProps<ActionType, State>, context: ConnectorContext<ActionType, ActionCreators, State>) {
             super(props, context);
-            this.state = { data: fromJS({}) };
+            this.state = {
+                data: this.props.record
+                    ? (new this.props.record())
+                    : fromJS({})
+            };
             this.handleChange = this.handleChange.bind(this);
         }
 
@@ -219,7 +226,11 @@ export function createAll<ActionType, ActionCreators, State>(React: typeof __Rea
         }
     }
 
-    function connect(selector) {
+    function connect<T>(record: { new (arg: any): T } | { (localState: any, appState: State): any }, selector?: (localState: T, appState: State) => any) {
+        if (typeof selector === 'undefined') {
+            selector = record as any;
+            record = null;
+        }
         return (DecoratedComponent) => {
             return class ConnectorDecorator extends React.Component<any, any> {
                 static displayName = `Connector(${getDisplayName(DecoratedComponent)})`;
@@ -228,7 +239,7 @@ export function createAll<ActionType, ActionCreators, State>(React: typeof __Rea
                 render() {
                     let inner = (props) => <DecoratedComponent {...props} {...this.props} />;
                     return (
-                        <Connector selector={selector} renderer={ inner } />
+                        <Connector selector={selector} record={record} renderer={ inner } />
                     );
                 }
             } as any;
