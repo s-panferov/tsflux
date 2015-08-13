@@ -1,3 +1,13 @@
+<a name="0.5.0"></a>
+# 0.5.0 (2015-08-13)
+
+
+### Features
+
+* ***:** allow to pass additional into through Flux a9ef5cd
+
+
+
 <a name="0.4.1"></a>
 ## 0.4.1 (2015-08-12)
 
