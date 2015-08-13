@@ -22,11 +22,12 @@ export interface Dispatch<T> {
     (action: Action<T>): void
 }
 
-export interface Flux<ActionType, State, ActionCreactors> {
+export interface Flux<ActionType, State, ActionCreactors, Addons> {
     events: EventEmitter,
     dispatch: Dispatch<ActionType>,
     actions: ActionCreactors,
-    getState(): State
+    getState(): State,
+    addons: Addons
 }
 
 export interface StateSlices<State> {
@@ -34,19 +35,20 @@ export interface StateSlices<State> {
     prevState: State
 }
 
-export interface Store<ActionType, ActionCreators, StoreState, State> {
+export interface Store<ActionType, ActionCreators, StoreState, State, Addons> {
     name: string
     (state: StoreState, action: Action<ActionType>,
-        flux: Flux<ActionType, State, ActionCreators>, states?: StateSlices<State>): StoreState
+        flux: Flux<ActionType, State, ActionCreators, Addons>, states?: StateSlices<State>): StoreState
 }
 
-export function runFlux<ActionType, ActionCreators, State, Action>(stores: Store<ActionType, ActionCreators, any, State>[],
+export function runFlux<ActionType, ActionCreators, State, Action, Addons>(stores: Store<ActionType, ActionCreators, any, State, Addons>[],
                                            initialState: State,
                                            ds: Dispatcher<ActionType>,
                                            events: EventEmitter,
-                                           actionCreators: any
+                                           actionCreators: any,
+                                           addons?: Addons
                                 )
-    : Flux<ActionType, State, ActionCreators> {
+    : Flux<ActionType, State, ActionCreators, Addons> {
 
     let dispatch = (action) => {
         console.log('Dispatch', action);
@@ -78,11 +80,12 @@ export function runFlux<ActionType, ActionCreators, State, Action>(stores: Store
         }
     }
 
-    let flux: Flux<ActionType, State, ActionCreators> = {
+    let flux: Flux<ActionType, State, ActionCreators, Addons> = {
         events,
         dispatch,
         getState,
-        actions: bindedCreators as any
+        actions: bindedCreators as any,
+        addons: addons || {} as any
     };
 
     // Note: pseudo-store
@@ -136,8 +139,8 @@ export function runFlux<ActionType, ActionCreators, State, Action>(stores: Store
     return flux;
 }
 
-export interface ProviderProps<ActionType, ActionCreators, State> extends __React.DOMAttributes {
-    flux: Flux<ActionType, State, ActionCreators>
+export interface ProviderProps<ActionType, ActionCreators, State, Addons> extends __React.DOMAttributes {
+    flux: Flux<ActionType, State, ActionCreators, Addons>
 }
 
 export interface ConnectorProps<ComponentState, State> extends __React.DOMAttributes {
@@ -150,8 +153,8 @@ export interface ConnectorState<ComponentState> {
     data: ComponentState
 }
 
-export interface ConnectorContext<ActionType, ActionCreators, State> {
-    flux: Flux<ActionType, State, ActionCreators>
+export interface ConnectorContext<ActionType, ActionCreators, State, Addons> {
+    flux: Flux<ActionType, State, ActionCreators, Addons>
 }
 
 export function getDisplayName(Component) {
@@ -162,8 +165,8 @@ export interface FluxProps<T> {
     dispatch?: Dispatch<T>
 }
 
-export function createAll<ActionType, ActionCreators, State>(React: typeof __React, fromJS: (o: any) => any) {
-    class Provider extends React.Component<ProviderProps<ActionType, ActionCreators, State>, any> {
+export function createAll<ActionType, ActionCreators, State, Addons>(React: typeof __React, fromJS: (o: any) => any) {
+    class Provider extends React.Component<ProviderProps<ActionType, ActionCreators, State, Addons>, any> {
         static childContextTypes = {
             flux: React.PropTypes.object.isRequired
         };
@@ -184,9 +187,9 @@ export function createAll<ActionType, ActionCreators, State>(React: typeof __Rea
             flux: React.PropTypes.object.isRequired
         };
 
-        context: ConnectorContext<ActionType, ActionCreators, State>
+        context: ConnectorContext<ActionType, ActionCreators, State, Addons>
 
-        constructor(props: ConnectorProps<ActionType, State>, context: ConnectorContext<ActionType, ActionCreators, State>) {
+        constructor(props: ConnectorProps<ActionType, State>, context: ConnectorContext<ActionType, ActionCreators, State, Addons>) {
             super(props, context);
             this.state = {
                 data: this.props.record
