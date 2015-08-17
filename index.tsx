@@ -224,8 +224,9 @@ export function createAll<ActionType, ActionCreators, State, Addons>(React: type
             const { renderer } = this.props;
             const { data } = this.state;
             const { flux: { dispatch, actions } } = this.context;
+            const { flux } = this.context;
 
-            return renderer({ dispatch, data, actions });
+            return renderer({ dispatch, data, actions, flux });
         }
     }
 
