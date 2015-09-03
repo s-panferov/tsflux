@@ -71,7 +71,12 @@ export function runFlux<ActionType, ActionCreators, State, Action, Addons>(store
                 if (typeof item == 'function') {
                     bindedCreators[i] = (...args: any[]) => {
                         console.log('call', i, item)
-                        dispatch(item(...args))
+                        let action = item(...args);
+                        if (typeof action === 'function') {
+                            action(dispatch, getState);
+                        } else {
+                            dispatch(action);
+                        }
                     }
                 } else {
                     bindedCreators[i] = item;
